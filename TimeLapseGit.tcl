@@ -22,10 +22,9 @@ pack .contents.text -side left -fill both -expand true
 
 bind .revisions.list <<ListboxSelect>> {
 	set r [.revisions.list get [.revisions.list curselection]]
-	set blob [exec git rev-parse "$r:$file"]
 	.contents.text configure -state normal
 	.contents.text delete 1.0 end
-	.contents.text insert end [exec git show $blob]
+	.contents.text insert end [exec git blame $r "$file"]
 	.contents.text configure -state disabled
 }
 
