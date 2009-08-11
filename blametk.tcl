@@ -17,18 +17,43 @@ proc seq { low high } {
 	return $result
 }
 
-scrollbar .contents_yscroll -command ".contents yview"
-scrollbar .contents_xscroll -orient horizontal -command ".contents xview"
-text .contents -wrap no -xscrollcommand ".contents_xscroll set" -yscrollcommand ".contents_yscroll set"
+proc iforeach { index_var value_var list body } {
+	upvar $index_var index
+	upvar $value_var value
 
-set revlist [exec git rev-list HEAD -- [lindex $argv 0]]
+	set index 0
+	foreach value $list {
+		uplevel $body
+		incr index
+	}
+}
 
-foreach i [seq 0 [llength $revlist]] {
-	set tagname rev$i
-	set incr [expr 255.0 / [llength $revlist]]
+proc scrolltext { name args } {
+	frame $name
+	eval [concat text $name.text $args -xscrollcommand \{$name.xscroll set\} -yscrollcommand \{$name.yscroll set\}]
+	scrollbar $name.xscroll -orient horizontal -command [concat $name.text xview]
+	scrollbar $name.yscroll -orient vertical -command [concat $name.text yview]
+	frame $name.corner
+
+	grid $name.text $name.yscroll -sticky news
+	grid $name.xscroll $name.corner -sticky news
+	grid rowconfigure $name 0 -weight 1
+	grid columnconfigure $name 0 -weight 1
+}
+
+panedwindow .window -orient vertical -showhandle true
+
+scrolltext .contents -wrap no
+
+set revlist [concat [string repeat "0" 40] [exec git rev-list HEAD -- [lindex $argv 0]]]
+
+set incr [expr 255.0 / ([llength $revlist] - 1)]
+puts $incr
+iforeach i revname $revlist {
 	set val [expr round($incr * $i)]
 	set color [format "#ffff%02x" $val $val]
-	.contents tag configure $tagname -background $color
+	puts "$i $revname $val $color"
+	.contents.text tag configure rev#$revname -background $color
 }
 
 set f [of_open "|git blame -p [lindex $argv 0]"]
@@ -48,21 +73,29 @@ while {[of_gets f line] >= 0} {
 		dict set revision_info($revision_name) $key $val
 	}
 
-	set oldend [.contents index end]
-	set lineno [.contents count -lines 1.0 end]
-	set revindex [expr [lsearch $revlist $revision_name] + 1]
-	set tagname rev$revindex
+	set oldend [.contents.text index end]
+	set lineno [.contents.text count -lines 1.0 end]
 	regexp $file_line_rxp $line _ fline
-	.contents insert end "$fline\n"
-	.contents tag add $tagname $lineno.0 [expr $lineno + 1].0
+	.contents.text insert end "$fline\n"
+	.contents.text tag add rev#$revision_name $lineno.0 [expr $lineno + 1].0
 }
-# .contents tag add rev0 1.0 1.end
-# .contents tag add rev1 2.0 2.end
-# .contents tag add rev2 3.0 3.end
-# .contents tag add rev3 4.0 4.end
 
-set usedrevs [array names revision_info]
+set revision_tag_rxp {\mrev#([[:xdigit:]]{40})\M}
 
-pack .contents_yscroll -side right -fill y
-pack .contents_xscroll -side bottom -fill x
-pack .contents -expand 1 -fill both
+bind .contents.text <Button> {
+	set idx [.contents.text index @%x,%y]
+	set tags [.contents.text tag names $idx]
+	if {![regexp $revision_tag_rxp $tags _ revname]} {
+		error "there was no revision tag in the selected item"
+	}
+	.info_pane.label configure -text $revname
+}
+
+frame .info_pane
+label .info_pane.label
+.window add .contents .info_pane
+.window paneconfigure .contents -stretch always
+.window paneconfigure .info_pane -stretch never
+pack .info_pane.label
+
+pack .window -expand 1 -fill both
