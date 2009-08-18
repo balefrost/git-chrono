@@ -84,6 +84,8 @@ while {[of_gets f line] >= 0} {
 	.contents.text tag add rev#$revision_name $lineno.0 [expr $lineno + 1].0
 }
 
+.contents.text configure -state disabled
+
 set revision_tag_rxp {\mrev#([[:xdigit:]]{40})\M}
 
 bind .contents.text <Button> {
