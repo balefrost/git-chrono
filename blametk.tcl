@@ -45,6 +45,12 @@ proc scrolltext { name args } {
 	grid columnconfigure $name 0 -weight 1
 }
 
+proc updateReadOnlyText { windowPath args } {
+	$windowPath configure -state normal
+	uplevel [concat $windowPath $args]
+	$windowPath configure -state disabled
+}
+
 panedwindow .window -orient vertical -showhandle true
 
 scrolltext .contents -wrap no
@@ -73,7 +79,6 @@ while {[of_gets f line] >= 0} {
 	do {
 		if {[of_gets f line] == -1} { error "Unexpected EOF" }
 	} while { [regexp $header_line_rxp $line _ key val] } {
-		#puts "\t[of_line $f]: $revision_name: $key = $val"
 		dict set revision_info($revision_name) $key $val
 	}
 
@@ -94,25 +99,33 @@ bind .contents.text <Button-1> {
 	if {![regexp $revision_tag_rxp $tags _ revname]} {
 		error "there was no revision tag in the selected item"
 	}
-	set revinfo $revision_info($revname)
+	event generate .contents.text <<RevisionSelected>> -data $revname
+}
+
+bind .contents.text <<RevisionSelected>> {
+	set revinfo $revision_info(%d)
 	
-	.info_pane.revisionValue configure -text $revname
-	.info_pane.authorValue configure -text "[dict get $revinfo author] [dict get $revinfo author-mail]"
-	.info_pane.dateValue configure -text "[clock format [dict get $revinfo author-time]]"
+	updateReadOnlyText .info_pane.revisionValue replace 1.0 end %d
+	updateReadOnlyText .info_pane.authorValue replace 1.0 end "[dict get $revinfo author] [dict get $revinfo author-mail]"
+	updateReadOnlyText .info_pane.dateValue replace 1.0 end "[clock format [dict get $revinfo author-time]]"
+	updateReadOnlyText .info_pane.commitSummaryValue replace 1.0 end "[dict get $revinfo summary]"
 }
 
 frame .info_pane
 label .info_pane.revisionLabel -text "Revision: "
-label .info_pane.revisionValue
+text .info_pane.revisionValue -height 1
 label .info_pane.authorLabel -text "Author: "
-label .info_pane.authorValue
+text .info_pane.authorValue -height 1
 label .info_pane.dateLabel -text "Date: "
-label .info_pane.dateValue
+text .info_pane.dateValue -height 1
+label .info_pane.commitSummaryLabel -text "Summary: "
+text .info_pane.commitSummaryValue -height 4
 .window add .contents .info_pane
 .window paneconfigure .contents -stretch always
 .window paneconfigure .info_pane -stretch never
-grid .info_pane.revisionLabel .info_pane.revisionValue
-grid .info_pane.authorLabel .info_pane.authorValue
-grid .info_pane.dateLabel .info_pane.dateValue
+grid .info_pane.revisionLabel .info_pane.revisionValue -sticky nw
+grid .info_pane.authorLabel .info_pane.authorValue -sticky nw
+grid .info_pane.dateLabel .info_pane.dateValue -sticky nw
+grid .info_pane.commitSummaryLabel .info_pane.commitSummaryValue -sticky nw
 
 pack .window -expand 1 -fill both
