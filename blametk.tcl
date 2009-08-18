@@ -94,14 +94,25 @@ bind .contents.text <Button-1> {
 	if {![regexp $revision_tag_rxp $tags _ revname]} {
 		error "there was no revision tag in the selected item"
 	}
-	.info_pane.label configure -text $revname
+	set revinfo $revision_info($revname)
+	
+	.info_pane.revisionValue configure -text $revname
+	.info_pane.authorValue configure -text "[dict get $revinfo author] [dict get $revinfo author-mail]"
+	.info_pane.dateValue configure -text "[clock format [dict get $revinfo author-time]]"
 }
 
 frame .info_pane
-label .info_pane.label
+label .info_pane.revisionLabel -text "Revision: "
+label .info_pane.revisionValue
+label .info_pane.authorLabel -text "Author: "
+label .info_pane.authorValue
+label .info_pane.dateLabel -text "Date: "
+label .info_pane.dateValue
 .window add .contents .info_pane
 .window paneconfigure .contents -stretch always
 .window paneconfigure .info_pane -stretch never
-pack .info_pane.label
+grid .info_pane.revisionLabel .info_pane.revisionValue
+grid .info_pane.authorLabel .info_pane.authorValue
+grid .info_pane.dateLabel .info_pane.dateValue
 
 pack .window -expand 1 -fill both
