@@ -88,7 +88,7 @@ while {[of_gets f line] >= 0} {
 
 set revision_tag_rxp {\mrev#([[:xdigit:]]{40})\M}
 
-bind .contents.text <Button> {
+bind .contents.text <Button-1> {
 	set idx [.contents.text index @%x,%y]
 	set tags [.contents.text tag names $idx]
 	if {![regexp $revision_tag_rxp $tags _ revname]} {
