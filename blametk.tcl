@@ -1,3 +1,7 @@
+#!/bin/sh
+# the next line restarts using wish \
+exec wish "$0" "$@"
+
 proc src_source { fname } {
 	upvar argv0 argv0
 	set path_parts [lrange [split $argv0 /] 0 end-1]
