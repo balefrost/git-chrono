@@ -1,3 +1,7 @@
+#!/bin/sh
+# the next line restarts using wish \
+exec wish "$0" "$@"
+
 set file [lindex $argv 0]
 
 panedwindow .panel -orient horizontal -showhandle true -background lightblue
@@ -24,7 +28,7 @@ bind .revisions.list <<ListboxSelect>> {
 	set r [.revisions.list get [.revisions.list curselection]]
 	.contents.text configure -state normal
 	.contents.text delete 1.0 end
-	.contents.text insert end [exec git blame $r "$file"]
+	.contents.text insert end [exec git show "$r:$file"]
 	.contents.text configure -state disabled
 }
 
