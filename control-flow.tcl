@@ -17,3 +17,14 @@ proc do {body while_or_until condition {rest {}}} {
 		uplevel $rest
 	}
 }
+
+proc iforeach { index_var value_var list body } {
+	upvar $index_var index
+	upvar $value_var value
+
+	set index 0
+	foreach value $list {
+		uplevel $body
+		incr index
+	}
+}

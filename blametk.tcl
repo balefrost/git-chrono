@@ -12,6 +12,7 @@ proc src_source { fname } {
 src_source ofile.tcl
 src_source control-flow.tcl
 src_source set.tcl
+src_source widget.tcl
 
 proc seq { low high } {
 	set result {}
@@ -19,36 +20,6 @@ proc seq { low high } {
 		lappend result $i
 	}
 	return $result
-}
-
-proc iforeach { index_var value_var list body } {
-	upvar $index_var index
-	upvar $value_var value
-
-	set index 0
-	foreach value $list {
-		uplevel $body
-		incr index
-	}
-}
-
-proc scrolltext { name args } {
-	frame $name
-	eval [concat text $name.text $args -xscrollcommand \{$name.xscroll set\} -yscrollcommand \{$name.yscroll set\}]
-	scrollbar $name.xscroll -orient horizontal -command [concat $name.text xview]
-	scrollbar $name.yscroll -orient vertical -command [concat $name.text yview]
-	frame $name.corner
-
-	grid $name.text $name.yscroll -sticky news
-	grid $name.xscroll $name.corner -sticky news
-	grid rowconfigure $name 0 -weight 1
-	grid columnconfigure $name 0 -weight 1
-}
-
-proc updateReadOnlyText { windowPath args } {
-	$windowPath configure -state normal
-	uplevel [concat $windowPath $args]
-	$windowPath configure -state disabled
 }
 
 panedwindow .window -orient vertical -showhandle true
@@ -105,10 +76,10 @@ bind .contents.text <Button-1> {
 bind .contents.text <<RevisionSelected>> {
 	set revinfo $revision_info(%d)
 	
-	updateReadOnlyText .info_pane.revisionValue replace 1.0 end %d
-	updateReadOnlyText .info_pane.authorValue replace 1.0 end "[dict get $revinfo author] [dict get $revinfo author-mail]"
-	updateReadOnlyText .info_pane.dateValue replace 1.0 end "[clock format [dict get $revinfo author-time]]"
-	updateReadOnlyText .info_pane.commitSummaryValue replace 1.0 end "[dict get $revinfo summary]"
+	setReadOnlyText .info_pane.revisionValue %d
+	setReadOnlyText .info_pane.authorValue "[dict get $revinfo author] [dict get $revinfo author-mail]"
+	setReadOnlyText .info_pane.dateValue "[clock format [dict get $revinfo author-time]]"
+	setReadOnlyText .info_pane.commitSummaryValue "[dict get $revinfo summary]"
 }
 
 frame .info_pane

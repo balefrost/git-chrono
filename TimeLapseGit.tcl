@@ -2,38 +2,37 @@
 # the next line restarts using wish \
 exec wish "$0" "$@"
 
+proc src_source { fname } {
+	upvar argv0 argv0
+	set path_parts [lrange [split $argv0 /] 0 end-1]
+	set script_path [join [concat $path_parts $fname] /]
+	source $script_path
+}
+
+src_source control-flow.tcl
+src_source widget.tcl
+
 set file [lindex $argv 0]
 
-panedwindow .panel -orient horizontal -showhandle true -background lightblue
+panedwindow .panel -orient horizontal -showhandle true
 
-frame .revisions
-listbox .revisions.list -yscrollcommand ".revisions.scroll set"
-scrollbar .revisions.scroll -command ".revisions.list yview"
+scroll listbox .revisions -noxscroll
+scroll text .file -state disabled -wrap none
 
-frame .contents
-scrollbar .contents.xscroll -orient horizontal -command ".contents.text xview"
-scrollbar .contents.yscroll -command ".contents.text yview"
-text .contents.text -state disabled -wrap none -xscrollcommand ".contents.xscroll set" -yscrollcommand ".contents.yscroll set"
+.panel add .revisions .file -sticky nsew
+pack .panel -expand true -fill both
 
-.panel add .revisions .contents -sticky nsew
-pack .panel -fill both -expand true
+bind .revisions.listbox <<ListboxSelect>> {
+	set revname [.revisions.listbox get [.revisions.listbox curselection]]
+	event generate .revisions.listbox <<RevisionSelected>> -data $revname
+}
 
-pack .revisions.scroll -in .revisions -side right -fill y
-pack .revisions.list -in .revisions -side left -fill both -expand true
-pack .contents.yscroll -side right -fill y
-pack .contents.xscroll -side bottom -fill x
-pack .contents.text -side left -fill both -expand true
-
-bind .revisions.list <<ListboxSelect>> {
-	set r [.revisions.list get [.revisions.list curselection]]
-	.contents.text configure -state normal
-	.contents.text delete 1.0 end
-	.contents.text insert end [exec git show "$r:$file"]
-	.contents.text configure -state disabled
+bind .revisions.listbox <<RevisionSelected>> {
+	setReadOnlyText .file.text [exec git show "%d:$file"]
 }
 
 set revlist [exec git rev-list HEAD -- $file]
 
 foreach r $revlist {
-	.revisions.list insert end $r
+	.revisions.listbox insert end $r
 }
