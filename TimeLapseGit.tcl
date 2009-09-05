@@ -23,16 +23,18 @@ scroll text .file -state disabled -wrap none
 pack .panel -expand true -fill both
 
 bind .revisions.listbox <<ListboxSelect>> {
-	set revname [.revisions.listbox get [.revisions.listbox curselection]]
-	event generate .revisions.listbox <<RevisionSelected>> -data $revname
+	set revname [lindex [dict keys $revdict] [.revisions.listbox curselection]]
+	set file [lindex [dict values $revdict] [.revisions.listbox curselection]]
+	event generate .revisions.listbox <<RevisionSelected>> -data "$revname:$file"
 }
 
 bind .revisions.listbox <<RevisionSelected>> {
-	setReadOnlyText .file.text [exec git show "%d:$file"]
+	setReadOnlyText .file.text [exec git show "%d"]
 }
 
-set revlist [exec git rev-list HEAD -- $file]
+set cmdResult [exec git log --name-only --follow --format=format:%H $file]
+set revdict [regexp -all -inline -- {[^\n]+} $cmdResult]
 
-foreach r $revlist {
-	.revisions.listbox insert end $r
+foreach {key value} $revdict {
+	.revisions.listbox insert end "$value ($key)"
 }

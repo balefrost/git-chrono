@@ -28,3 +28,9 @@ proc iforeach { index_var value_var list body } {
 		incr index
 	}
 }
+
+proc doto { value commandList } {
+	foreach command $commandList {
+		uplevel [concat $value $command]
+	}
+}
