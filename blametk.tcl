@@ -9,10 +9,10 @@ proc src_source { fname } {
 	source $script_path
 }
 
-src_source ofile.tcl
 src_source control-flow.tcl
 src_source set.tcl
 src_source widget.tcl
+src_source git.tcl
 
 proc seq { low high } {
 	set result {}
@@ -22,11 +22,17 @@ proc seq { low high } {
 	return $result
 }
 
+proc bash-escape { param } {
+	return [regsub -all { } $param "\\ "]
+}
+
+set file [lindex $argv 0]
+
 panedwindow .window -orient vertical -showhandle true
 
-scrolltext .contents -wrap no
+scroll text .contents -wrap no
 
-set revlist [concat [string repeat "0" 40] [exec git rev-list HEAD -- [lindex $argv 0]]]
+set revlist [concat [string repeat "0" 40] [dict keys [git-follow-revs $file]]]
 
 set incr [expr 255.0 / ([llength $revlist] - 1)]
 puts $incr
@@ -37,18 +43,18 @@ iforeach i revname $revlist {
 	.contents.text tag configure rev#$revname -background $color
 }
 
-set f [of_open "|git blame -p [lindex $argv 0]"]
+set f [open "|git blame -p [bash-escape $file]"]
 set revision_header_rxp {^([[:xdigit:]]{40}) ([[:digit:]]+) ([[:digit:]]+)(?: ([[:digit:]]+))?$}
 set file_line_rxp {^\t(.*)$}
 set header_line_rxp {^([^\t].*?)(?: (.*))?$}
 
-while {[of_gets f line] >= 0} {
+while {[gets $f line] >= 0} {
 	if {![regexp $revision_header_rxp $line _ revision_name src_line dst_line line_count]} {
 		error "expected header line! ($line)"
 	}
 
 	do {
-		if {[of_gets f line] == -1} { error "Unexpected EOF" }
+		if {[gets $f line] == -1} { error "Unexpected EOF" }
 	} while { [regexp $header_line_rxp $line _ key val] } {
 		dict set revision_info($revision_name) $key $val
 	}
@@ -59,6 +65,8 @@ while {[of_gets f line] >= 0} {
 	.contents.text insert end "$fline\n"
 	.contents.text tag add rev#$revision_name $lineno.0 [expr $lineno + 1].0
 }
+
+
 
 .contents.text configure -state disabled
 
@@ -80,11 +88,14 @@ bind .contents.text <<RevisionSelected>> {
 	setReadOnlyText .info_pane.authorValue "[dict get $revinfo author] [dict get $revinfo author-mail]"
 	setReadOnlyText .info_pane.dateValue "[clock format [dict get $revinfo author-time]]"
 	setReadOnlyText .info_pane.commitSummaryValue "[dict get $revinfo summary]"
+	setReadOnlyText .info_pane.filenameValue "[dict get $revinfo filename]"
 }
 
 frame .info_pane
 label .info_pane.revisionLabel -text "Revision: "
 text .info_pane.revisionValue -height 1
+label .info_pane.filenameLabel -text "Filename: "
+text .info_pane.filenameValue -height 1
 label .info_pane.authorLabel -text "Author: "
 text .info_pane.authorValue -height 1
 label .info_pane.dateLabel -text "Date: "
@@ -95,6 +106,7 @@ text .info_pane.commitSummaryValue -height 4
 .window paneconfigure .contents -stretch always
 .window paneconfigure .info_pane -stretch never
 grid .info_pane.revisionLabel .info_pane.revisionValue -sticky nw
+grid .info_pane.filenameLabel .info_pane.filenameValue -sticky nw
 grid .info_pane.authorLabel .info_pane.authorValue -sticky nw
 grid .info_pane.dateLabel .info_pane.dateValue -sticky nw
 grid .info_pane.commitSummaryLabel .info_pane.commitSummaryValue -sticky nw

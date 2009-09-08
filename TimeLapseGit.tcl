@@ -32,8 +32,7 @@ bind .revisions.listbox <<RevisionSelected>> {
 	setReadOnlyText .file.text [exec git show "%d"]
 }
 
-set cmdResult [exec git log --name-only --follow --format=format:%H $file]
-set revdict [regexp -all -inline -- {[^\n]+} $cmdResult]
+set revdict [git-follow-revs $file]
 
 foreach {key value} $revdict {
 	.revisions.listbox insert end "$value ($key)"
