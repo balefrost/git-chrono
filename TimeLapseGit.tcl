@@ -11,6 +11,7 @@ proc src_source { fname } {
 
 src_source control-flow.tcl
 src_source widget.tcl
+src_source git.tcl
 
 set file [lindex $argv 0]
 

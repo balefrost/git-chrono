@@ -70,3 +70,7 @@ proc updateReadOnlyText { windowPath block } {
 	uplevel $block
 	$windowPath configure -state disabled
 }
+
+proc color { red green blue } {
+	return [format "#%02x%02x%02x" $red $green $blue]
+}

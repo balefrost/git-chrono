@@ -1,7 +1,7 @@
-proc ssubtract { src_set set_to_remove } {
+proc ssubtract { src_set to_remove } {
 	set result {}
 	foreach i $src_set {
-		if {[lsearch $set_to_remove $i] == -1} {
+		if {[lsearch $to_remove $i] == -1} {
 			lappend result $i
 		}
 	}

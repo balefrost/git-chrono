@@ -18,6 +18,14 @@ proc do {body while_or_until condition {rest {}}} {
 	}
 }
 
+proc seq { low high } {
+	set result {}
+	for { set i $low } { $i <= $high } { incr i } {
+		lappend result $i
+	}
+	return $result
+}
+
 proc iforeach { index_var value_var list body } {
 	upvar $index_var index
 	upvar $value_var value
