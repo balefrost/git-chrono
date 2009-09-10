@@ -3,7 +3,14 @@ proc bash-escape { param } {
 }
 
 proc git-blame { filename linevar revnamevar infovar body } {
-	set f [open "|git blame -p [bash-escape $filename]"]
+	set parts [split $filename ":"]
+	if { [llength $parts] == 2 } {
+		set f [open "|git blame -p [lindex $parts 0] -- [bash-escape [lindex $parts 1]]"]
+	} elseif { [llength $parts] == 1 } {
+		set f [open "|git blame -p [lindex $parts 0]"]
+	} else {
+		error "The filename was bad"
+	}
 	git-blame-proc 2 $f $linevar $revnamevar $infovar $body
 }
 
