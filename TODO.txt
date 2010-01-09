@@ -1,0 +1,3 @@
+- Make revision fields read-only when the application starts
+- Populate revision fields when a revision is clicked in the sidebar
+- better labels in sidebar

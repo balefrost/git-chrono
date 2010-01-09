@@ -1,15 +1,4 @@
-# proc scrolltext { name args } {
-# 	frame $name
-# 	eval [concat text $name.text $args -xscrollcommand \{$name.xscroll set\} -yscrollcommand \{$name.yscroll set\}]
-# 	scrollbar $name.xscroll -orient horizontal -command [concat $name.text xview]
-# 	scrollbar $name.yscroll -orient vertical -command [concat $name.text yview]
-# 	frame $name.corner
-# 
-# 	grid $name.text $name.yscroll -sticky news
-# 	grid $name.xscroll $name.corner -sticky news
-# 	grid rowconfigure $name 0 -weight 1
-# 	grid columnconfigure $name 0 -weight 1
-# }
+package provide widget 0
 
 proc consumeArg { listName argName } {
 	upvar $listName list

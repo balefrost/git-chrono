@@ -1,3 +1,5 @@
+package provide test 0
+
 proc test { mapping } {
 	dict for { name proc} $mapping {
 		puts -nonewline $name

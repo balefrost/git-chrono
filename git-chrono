@@ -2,19 +2,14 @@
 # the next line restarts using wish \
 exec wish "$0" "$@"
 
-proc src_source { fname } {
-	upvar argv0 argv0
-	set path_parts [lrange [split $argv0 /] 0 end-1]
-	set script_path [join [concat $path_parts $fname] /]
-	source $script_path
+::tcl::tm::path add [file dirname $argv0]
+package require git 0
+package require widget 0
+
+if { [llength $argv] != 1 } {
+	puts "[file tail $argv0] requires exactly one parameter"
+	exit 1
 }
-
-src_source control-flow.tcl
-src_source set.tcl
-src_source widget.tcl
-src_source git.tcl
-
-
 set file [lindex $argv 0]
 
 panedwindow .window -orient horizontal -showhandle true
@@ -22,7 +17,7 @@ scroll listbox .revisions -noxscroll
 panedwindow .panel -orient vertical -showhandle true
 .window add .revisions .panel -sticky news
 
-scroll text .contents -wrap no
+scroll text .contents -wrap no -state disabled
 frame .info_pane
 .panel add .contents .info_pane -sticky news
 
@@ -31,17 +26,22 @@ frame .info_pane
 .panel paneconfigure .contents -stretch always
 .panel paneconfigure .info_pane -stretch never
 
-label .info_pane.revisionLabel -text "Revision: "
-text .info_pane.revisionValue -height 1
+label .info_pane.commitLabel -text "Commit: "
+text .info_pane.commitValue -height 1 -state disabled
+bind .info_pane.commitValue <1> {focus %W}
 label .info_pane.filenameLabel -text "Filename: "
-text .info_pane.filenameValue -height 1
+text .info_pane.filenameValue -height 1 -state disabled
+bind .info_pane.filenameValue <1> {focus %W}
 label .info_pane.authorLabel -text "Author: "
-text .info_pane.authorValue -height 1
+text .info_pane.authorValue -height 1 -state disabled
+bind .info_pane.authorValue <1> {focus %W}
 label .info_pane.dateLabel -text "Date: "
-text .info_pane.dateValue -height 1
+text .info_pane.dateValue -height 1 -state disabled
+bind .info_pane.dateValue <1> {focus %W}
 label .info_pane.commitSummaryLabel -text "Summary: "
-text .info_pane.commitSummaryValue -height 4
-grid .info_pane.revisionLabel .info_pane.revisionValue -sticky nw
+text .info_pane.commitSummaryValue -height 4 -state disabled
+bind .info_pane.commitSummaryValue <1> {focus %W}
+grid .info_pane.commitLabel .info_pane.commitValue -sticky nw
 grid .info_pane.filenameLabel .info_pane.filenameValue -sticky nw
 grid .info_pane.authorLabel .info_pane.authorValue -sticky nw
 grid .info_pane.dateLabel .info_pane.dateValue -sticky nw
@@ -51,19 +51,21 @@ pack .window -expand 1 -fill both
 
 
 
-set revdict [git-follow-revs $file]
+set revdict [git::log $file]
 
 foreach {key value} $revdict {
-	.revisions.listbox insert end "$value ($key)"
+	.revisions.listbox insert end "[clock format [dict get $value author-time]]"
 }
 
 bind .revisions.listbox <<ListboxSelect>> {
 	set revname [lindex [dict keys $revdict] [.revisions.listbox curselection]]
-	set file [lindex [dict values $revdict] [.revisions.listbox curselection]]
-	event generate .revisions.listbox <<RevisionSelected>> -data "$revname:$file"
+	set revinfo [lindex [dict values $revdict] [.revisions.listbox curselection]]
+	set file [dict get $revinfo filename]
+	event generate .revisions.listbox <<RevisionSelected>> -data [dict create revname $revname filename $file]
 }
 
-bind .contents.text <Button-1> {
+bind .contents.text <1> {
+	focus %W
 	set idx [.contents.text index @%x,%y]
 	set tags [.contents.text tag names $idx]
 	if {[regexp {\mrev#([[:xdigit:]]{40})\M} $tags _ revname]} {
@@ -73,12 +75,21 @@ bind .contents.text <Button-1> {
 
 set uncommitted_changes [string repeat "0" 40]
 
+proc updateRevisionInfo { revision revinfo } {
+	setReadOnlyText .info_pane.commitValue $revision
+	setReadOnlyText .info_pane.authorValue "[dict get $revinfo author] [dict get $revinfo author-mail]"
+	setReadOnlyText .info_pane.dateValue "[clock format [dict get $revinfo author-time]]"
+	setReadOnlyText .info_pane.commitSummaryValue "[dict get $revinfo summary]"
+	setReadOnlyText .info_pane.filenameValue "[dict get $revinfo filename]"
+}
+
 bind .revisions.listbox <<RevisionSelected>> {
 	array unset revision_info
 	
+	.contents.text configure -state normal
 	.contents.text delete 1.0 end
 	
-	git-blame %d line revname info {
+	git::blame "[dict get %d revname]:[dict get %d filename]" line revname info {
 		set lineno [.contents.text count -lines 1.0 end]
 		.contents.text insert end "$line\n"
 		.contents.text tag add rev#$revname $lineno.0 [expr $lineno + 1].0
@@ -96,23 +107,15 @@ bind .revisions.listbox <<RevisionSelected>> {
 		set color [color 255 255 $val]
 		.contents.text tag configure rev#$revname -background $color
 	}
+	.contents.text tag raise sel
+	
+	.contents.text configure -state disabled
+	
+	updateRevisionInfo [dict get %d revname] [dict get $revdict [dict get %d revname]]
 }
 
 bind .contents.text <<RevisionSelected>> {
-	set revinfo $revision_info(%d)
-	
-	setReadOnlyText .info_pane.revisionValue %d
-	setReadOnlyText .info_pane.authorValue "[dict get $revinfo author] [dict get $revinfo author-mail]"
-	setReadOnlyText .info_pane.dateValue "[clock format [dict get $revinfo author-time]]"
-	setReadOnlyText .info_pane.commitSummaryValue "[dict get $revinfo summary]"
-	setReadOnlyText .info_pane.filenameValue "[dict get $revinfo filename]"
+	updateRevisionInfo %d $revision_info(%d)
 }
 
-
-
-
-
-
-
-
-
+wm title . "git chrono: $file"

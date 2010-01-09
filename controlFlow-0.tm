@@ -1,3 +1,5 @@
+package provide controlFlow 0
+
 proc do {body while_or_until condition {rest {}}} {
 	if {$while_or_until eq "while"} {
 		set break_test [list uplevel expr ! ( $condition ) ]
@@ -41,4 +43,19 @@ proc doto { value commandList } {
 	foreach command $commandList {
 		uplevel [concat $value $command]
 	}
+}
+
+proc flatmap { varlist list body } {
+	foreach varname $varlist {
+		upvar $varname $varname
+	}
+	
+	set result {}
+	
+	foreach $varlist $list {
+		set values [uplevel $body]
+		lappend result {*}$values
+	}
+	
+	return $result
 }

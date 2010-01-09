@@ -1,5 +1,5 @@
-source control-flow.tcl
-source test.tcl
+package require controlFlow 0
+package require test 0
 
 test {
 	"simple while" {

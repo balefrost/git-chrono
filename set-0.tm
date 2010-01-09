@@ -1,3 +1,5 @@
+package provide set 0
+
 proc ssubtract { src_set to_remove } {
 	set result {}
 	foreach i $src_set {
