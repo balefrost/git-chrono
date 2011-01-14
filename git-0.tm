@@ -65,5 +65,9 @@ namespace eval git {
 			list $commitName [dict create author $authorName author-mail "<$authorEmail>" author-time $authorDate summary $subject filename $fileName]
 		}
 	}
+	
+	proc cdup {} {
+		return [exec git rev-parse --show-cdup]
+	}
 
 }

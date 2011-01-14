@@ -96,7 +96,7 @@ bind .revisions.listbox <<RevisionSelected>> {
 	.contents.text configure -state normal
 	.contents.text delete 1.0 end
 	
-	git::blame "[dict get %d revname]:[dict get %d filename]" line revname info {
+	git::blame "[dict get %d revname]:[git::cdup][dict get %d filename]" line revname info {
 		set lineno [.contents.text count -lines 1.0 end]
 		.contents.text insert end "$line\n"
 		.contents.text tag add rev#$revname $lineno.0 [expr $lineno + 1].0
