@@ -54,7 +54,8 @@ pack .window -expand 1 -fill both
 set revdict [git::log $file]
 
 foreach {key value} $revdict {
-	.revisions.listbox insert end "[clock format [dict get $value author-time]]"
+	set time [clock format [dict get $value author-time] -format "%Y-%m-%d %H:%M"]
+	.revisions.listbox insert end $time
 }
 
 bind .revisions.listbox <<ListboxSelect>> {
