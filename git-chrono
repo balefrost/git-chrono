@@ -84,6 +84,10 @@ proc updateRevisionInfo { revision revinfo } {
 	setReadOnlyText .info_pane.filenameValue "[dict get $revinfo filename]"
 }
 
+proc clamp { min val max } {
+	expr "min( $max , max( $min , $val))"
+}
+
 bind .revisions.listbox <<RevisionSelected>> {
 	array unset revision_info
 	
@@ -103,11 +107,22 @@ bind .revisions.listbox <<RevisionSelected>> {
 	if { [llength [array names revision_info -exact $uncommitted_changes]] != 0 } {
 		set revlist [linsert $revlist 0 $uncommitted_changes]
 	}
-
-	set incr [expr 255.0 / ([llength $revlist] - 1)]
-	iforeach i revname $revlist {
-		set val [expr round($incr * $i)]
-		set color [color 255 255 $val]
+	
+	# yellow lines are "new", white lines are "old"
+	# currently doesn't take into consideration which revision we are looking at. So lines don't seem to age as you change the current revision
+	set maxAge 7
+	set thisRevisionName [dict get %d revname]
+	set thisRevisionIndex [llength $revlist]
+	for {set i 0} {$i < [llength $revlist]} {incr i 1} {
+		set revname [lindex $revlist $i]
+		if { $revname eq $thisRevisionName } {
+			set thisRevisionIndex $i
+		}
+		
+		set age [clamp 0 [expr $i - $thisRevisionIndex] $maxAge]
+		
+		set blue [expr min(255, round(255.0 * $age / ($maxAge - 1)))]
+		set color [color 255 255 $blue]
 		.contents.text tag configure rev#$revname -background $color
 	}
 	.contents.text tag raise sel
