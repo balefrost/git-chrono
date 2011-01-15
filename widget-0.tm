@@ -20,12 +20,12 @@ proc scroll { type name args } {
 	set widgetCommand [concat $type $name.$type $args]
 	if { $xscroll } {
 		lappend widgetCommand -xscrollcommand "$name.xscroll set"
-		scrollbar $name.xscroll -orient horizontal -command "$name.text xview"
+		scrollbar $name.xscroll -orient horizontal -command "$name.$type xview"
 	}
 
 	if { $yscroll } {
 		lappend widgetCommand -yscrollcommand "$name.yscroll set"
-		scrollbar $name.yscroll -orient vertical -command "$name.text yview"
+		scrollbar $name.yscroll -orient vertical -command "$name.$type yview"
 	}
 	
 	if { $xscroll && $yscroll } {
