@@ -88,6 +88,48 @@ proc clamp { min val max } {
 	expr "min( $max , max( $min , $val))"
 }
 
+proc mod { v b } {
+	set wholes [expr floor(double($v) / double($b))]
+	return [expr $v - $wholes * $b]
+}
+
+proc rgb { r g b } {
+	return [color [expr round(255 * $r)] [expr round(255 * $g)] [expr round(255 * $b)]]
+}
+
+proc hsb { h s b } {
+	set c [expr $s * $b]
+	set hprime [expr $h / 60.0]
+	set x [expr $c * (1 - abs([mod $hprime 2] - 1))]
+	set red 0
+	set green 0
+	set blue 0
+	if {0 <= $hprime && $hprime < 1} {
+		set red $c
+		set green $x
+	} elseif {1 <= $hprime && $hprime < 2} {
+		set red $x
+		set green $c
+	} elseif {2 <= $hprime && $hprime < 3} {
+		set green $c
+		set blue $x
+	} elseif {3 <= $hprime && $hprime < 4} {
+		set green $x
+		set blue $c
+	} elseif {4 <= $hprime && $hprime < 5} {
+		set blue $c
+		set red $x
+	} elseif {5 <= $hprime && $hprime < 6} {
+		set blue $x
+		set red $c
+	}
+	set m [expr $b - $c]
+	set red [expr $red + $m]
+	set green [expr $green + $m]
+	set blue [expr $blue + $m]
+	return [rgb $red $green $blue]
+}
+
 bind .revisions.listbox <<RevisionSelected>> {
 	array unset revision_info
 	
@@ -109,21 +151,23 @@ bind .revisions.listbox <<RevisionSelected>> {
 	}
 	
 	# yellow lines are "new", white lines are "old"
-	# currently doesn't take into consideration which revision we are looking at. So lines don't seem to age as you change the current revision
-	set maxAge 7
 	set thisRevisionName [dict get %d revname]
 	set thisRevisionIndex [llength $revlist]
+	set hue 60
 	for {set i 0} {$i < [llength $revlist]} {incr i 1} {
 		set revname [lindex $revlist $i]
 		if { $revname eq $thisRevisionName } {
 			set thisRevisionIndex $i
 		}
 		
-		set age [clamp 0 [expr $i - $thisRevisionIndex] $maxAge]
+		set age [expr max(0, $i - $thisRevisionIndex)]
 		
-		set blue [expr min(255, round(255.0 * $age / ($maxAge - 1)))]
-		set color [color 255 255 $blue]
+		set saturation [expr 1.0 / ($age + 1)]
+		set value [expr 1 - (1 / ($age + 1)) * 0.1]
+
+		set color [hsb $hue $saturation $value]
 		.contents.text tag configure rev#$revname -background $color
+		
 	}
 	.contents.text tag raise sel
 	
