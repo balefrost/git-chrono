@@ -25,7 +25,7 @@ namespace eval git {
 		upvar $levels $linevar line
 		upvar $levels $revnamevar revname
 		upvar $levels $infovar info
-	
+
 		set revision_header_rxp {^([[:xdigit:]]{40}) ([[:digit:]]+) ([[:digit:]]+)(?: ([[:digit:]]+))?$}
 		set file_line_rxp {^\t(.*)$}
 		set header_line_rxp {^([^\t].*?)(?: (.*))?$}
@@ -40,9 +40,9 @@ namespace eval git {
 			} while { [regexp $header_line_rxp $fline _ key val] } {
 				dict set revision_info($revname) $key $val
 			}
-	
+
 			regexp $file_line_rxp $fline _ line
-		
+
 			set info $revision_info($revname)
 
 			uplevel $levels $proc
@@ -54,18 +54,18 @@ namespace eval git {
 	#The resulting list contains interleaved revision name and file name entries.
 	#This also makes it suitable for use as a dict.
 	proc follow-revs { file } {
-		set cmdResult [exec git log --name-only --follow --format=format:%H $file]
+		set cmdResult [exec git log --name-only --follow --format=format:%H -- $file]
 		return [regexp -all -inline -- {[^\n]+} $cmdResult]
 	}
 
 	proc log { file } {
-		set cmdResult [exec git log --name-only --follow --format=format:%H%n%an%n%ae%n%at%n%s $file]
+		set cmdResult [exec git log --name-only --follow --format=format:%H%n%an%n%ae%n%at%n%s -- $file]
 		set rxpResult [regexp -all -inline -- {[^\n]+} $cmdResult]
 		flatmap { commitName authorName authorEmail authorDate subject fileName } $rxpResult {
 			list $commitName [dict create author $authorName author-mail "<$authorEmail>" author-time $authorDate summary $subject filename $fileName]
 		}
 	}
-	
+
 	proc cdup {} {
 		return [exec git rev-parse --show-cdup]
 	}
