@@ -132,12 +132,12 @@ proc hsb { h s b } {
 
 bind .revisions.listbox <<RevisionSelected>> {
 	array unset revision_info
-	
+
 	set oldyview [.contents.text yview]
 	set oldmid [expr ([lindex $oldyview 0] + [lindex $oldyview 1]) / 2]
 	.contents.text configure -state normal
 	.contents.text delete 1.0 end
-	
+
 	git::blame "[dict get %d revname]:[git::cdup][dict get %d filename]" line revname info {
 		set lineno [.contents.text count -lines 1.0 end]
 		.contents.text insert end "$line\n"
@@ -149,7 +149,7 @@ bind .revisions.listbox <<RevisionSelected>> {
 	if { [llength [array names revision_info -exact $uncommitted_changes]] != 0 } {
 		set revlist [linsert $revlist 0 $uncommitted_changes]
 	}
-	
+
 	# yellow lines are "new", white lines are "old"
 	set thisRevisionName [dict get %d revname]
 	set thisRevisionIndex [llength $revlist]
@@ -159,29 +159,35 @@ bind .revisions.listbox <<RevisionSelected>> {
 		if { $revname eq $thisRevisionName } {
 			set thisRevisionIndex $i
 		}
-		
+
 		set age [expr max(0, $i - $thisRevisionIndex)]
-		
+
 		set saturation [expr 1.0 / ($age + 1)]
 		set value [expr 1 - (1 / ($age + 1)) * 0.1]
 
 		set color [hsb $hue $saturation $value]
 		.contents.text tag configure rev#$revname -background $color
-		
+
 	}
 	.contents.text tag raise sel
-	
+
 	.contents.text configure -state disabled
-	
+
 	set span [expr [lindex $oldyview 1] - [lindex $oldyview 0]]
 	set top [expr $oldmid - $span / 2]
 	.contents.text yview moveto $top
-	
+
 	updateRevisionInfo [dict get %d revname] [dict get $revdict [dict get %d revname]]
 }
 
 bind .contents.text <<RevisionSelected>> {
 	updateRevisionInfo %d $revision_info(%d)
 }
+
+focus .revisions.listbox
+
+.revisions.listbox selection set 0
+# For whatever reason, the above line doesn't actually fire selectionlisteners.
+event generate .revisions.listbox <<ListboxSelect>>
 
 wm title . "git chrono: $file"
