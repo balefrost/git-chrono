@@ -168,6 +168,8 @@ bind .revisions.listbox <<RevisionSelected>> {
 		set color [hsb $hue $saturation $value]
 		.contents.text tag configure rev#$revname -background $color
 
+		set isSelected [expr $age == 0]
+		.contents.text tag configure rev#$revname -underline $isSelected
 	}
 	.contents.text tag raise sel
 
