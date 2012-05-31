@@ -2,7 +2,13 @@
 # the next line restarts using wish \
 exec wish "$0" "$@"
 
-::tcl::tm::path add [file dirname $argv0]
+set path $argv0
+file lstat $path file_stats
+if { [lindex [array get file_stats type] 1] == "link" } {
+	set path [file readlink $path]
+}
+
+::tcl::tm::path add [file dirname $path]
 package require git 0
 package require widget 0
 
