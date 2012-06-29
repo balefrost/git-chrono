@@ -5,7 +5,7 @@ exec wish "$0" "$@"
 set path $argv0
 file lstat $path file_stats
 if { [lindex [array get file_stats type] 1] == "link" } {
-	set path [file readlink $path]
+	set path [file normalize [file join [file dirname $argv0] [file readlink $path]]]
 }
 
 ::tcl::tm::path add [file dirname $path]
